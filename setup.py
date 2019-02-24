@@ -9,7 +9,7 @@ if sys.version_info <= (3,1):
     extra_install.append('futures')
 
 setup(
-    name="staeon-core",
+    name="staeon",
     version='0.1.0',
     description='Core library for the Staeon cryptocurrency',
     long_description=open('README.md').read(),
@@ -29,6 +29,6 @@ setup(
     install_requires=[
         'requests',
         'arrow',
-        'bitcoin',
+        'bitcoin==1.1.42',
     ] + extra_install
 )
