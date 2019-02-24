@@ -7,7 +7,7 @@ from bitcoin import (
     ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoaddr, is_address
 )
 
-from .consensus_util import validate_timestamp
+from .consensus import validate_timestamp
 from .exceptions import *
 
 def _cut_to_8(amount):

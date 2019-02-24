@@ -157,7 +157,7 @@ class P2SHAddressTest(unittest.TestCase):
         o = [['3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy', 2.2]]
 
         with self.assertRaises(InvalidAddress, msg="3 addresses are invalid"):
-            make_transaction(i, o),
+            make_transaction(i, o)
 
 
 if __name__ == '__main__':
