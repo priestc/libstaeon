@@ -11,7 +11,7 @@ class RejectedTransaction(BaseException):
 class PotentialDoubleSpend(RejectedTransaction):
     pass
 
-class ExpiredTransaction(RejectedTransaction):
+class ExpiredTimestamp(RejectedTransaction):
     pass
 
 class InvalidSignature(InvalidTransaction):

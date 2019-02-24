@@ -1,4 +1,5 @@
 import datetime
+
 from bitcoin import ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoaddr
 from .exceptions import *
 
@@ -22,16 +23,18 @@ def seconds_til_next_epoch(t):
     """
     How many seconds from passed in datetime object does the next epoch start?
     """
+    assert EPOCH_LENGTH_SECONDS == 600
     return EPOCH_LENGTH_SECONDS - (
         ((t.minute % 10) * 60) + t.second + (t.microsecond / 1000000.0)
     )
 
 def validate_timestamp(ts, now=None):
+    assert type(ts) == datetime.datetime, "Timestamp must be datetime object"
     if seconds_til_next_epoch(ts) < EPOCH_CLOSING_SECONDS:
         raise InvalidTimestamp("Within closing interval")
     if not now:
         now = datetime.datetime.now()
-    if ts - now < datetime.timedelta(seconds=PROPAGATION_WINDOW_SECONDS):
+    if now - ts > datetime.timedelta(seconds=PROPAGATION_WINDOW_SECONDS):
         raise ExpiredTimestamp("Propagation window exceeded")
     return True
 
