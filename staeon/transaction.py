@@ -108,20 +108,3 @@ def make_txid(tx):
         msg += "%s%s" % (address, amount)
 
     return hashlib.sha256(msg).hexdigest()
-
-def make_transaction_authorization(tx, node):
-    msg = "%s%s" % (tx['txid'], node['domain'])
-    return {
-        'domain': node['domain'],
-        'signature': ecdsa_sign(msg, node['private_key'])
-    }
-
-def validate_transaction_authorization(tx, auth):
-    sig = auth['signature']
-    msg = "%s%s" % (tx['txid'], auth['domain'])
-    auth_pubkey = ecdsa_recover(msg, sig)
-    if not pubtoaddr(auth_pubkey) == auth['payout_address']:
-        raise Exception("Invalid Authprization: Signing key does not match payout address")
-    if not ecdsa_verify(msg, sig, auth_pubkey):
-        raise Exception("Invalid authorization: Invalid signature")
-    return True

@@ -56,3 +56,35 @@ def validate_ledger_hash_push(payout_address, ledger_hash, domain, sig):
         raise Excception("Invalid Signature")
 
     return True
+
+def propagate_rejection(tx, exc, my_node, nodes):
+    my_domain = my_node['domain']
+    msg = "%s%s" % (tx['txid'], my_domain)
+    rejection = json.dumps({
+        'domain': my_domain,
+        'txid': tx['txid'],
+        'signature': ecdsa_sign(msg, my_node['private_key']),
+        'reason': exc.display()
+    })
+    for node in nodes:
+        url = "https://%s/staeon/rejection" % (node['domain'])
+        try:
+            response = requests.post(url, rejection)
+        except:
+            print "%s failed" % url
+
+def validate_rejection_authorization(authorization):
+    message = "%s%s" % (authorization['txid'], authorization['domain'])
+    sig = authorization['signature']
+    try:
+        pubkey = ecdsa_recover(message, sig)
+    except:
+        raise InvalidSignature("Can't recover pubkey from rejection signature")
+
+    valid_sig = ecdsa_verify(message, sig, pubkey)
+    valid_address = pubtoaddr(pubkey) == authorization['payout_address']
+
+    if not valid_sig or not valid_address:
+        raise InvalidSignature("Rejection signature not valid" % i)
+
+    return True
