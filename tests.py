@@ -1,14 +1,14 @@
 import unittest
 import dateutil.parser
 
-from staeon.tx_util import make_txid, make_transaction, validate_transaction
+from staeon.transaction import make_txid, make_transaction, validate_transaction
 from staeon.exceptions import *
 
-i = [
+i = [ # test inputs
     ['18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6', 3.2, 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'],
     ['14ZiHtrmT6Mi4RT2Liz51WKZMeyq2n5tgG', 0.5, 'KxWoW9Pj45UzUH1d5p3wPe7zxbdJqU7HHkDQF1YQS1AiQg9qeZ9H']
 ]
-o = [
+o = [ # test outputs
     ['16ViwyAVeKtz4vbTXWRSYgadT5w3Rj3yuq', 2.2],
     ['18pPTxvTc9rJZfD2tM1bNYHFhAcZjgqEdQ', 1.4]
 ]

@@ -5,8 +5,8 @@ runs the Staeon cryptocurrency network.
 
 ## To install:
 
-    pip install libstaeon
+    $ pip install libstaeon
 
 ## Running tests
 
-   python tests.py
+    $ python tests.py
