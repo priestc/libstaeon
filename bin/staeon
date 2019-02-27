@@ -20,9 +20,10 @@ if argz.subparser_name == 'register-node':
     try:
         f = open("/etc/staeon-node.conf", 'r+')
         old_domain, old_pk  = [x.strip() for x in f.readlines()]
+        f.close()
+        os.remove("/etc/staeon-node.conf")
     except (IOError, IndexError): # file not created yet
-        f = open("/etc/staeon-node.conf", 'w')
-        old_domain, old_pk = [None, None]
+        old_pk, old_domain = None, None
 
     domain = argz.domain or old_domain
     pk = argz.pk or old_pk
@@ -31,12 +32,9 @@ if argz.subparser_name == 'register-node':
         print("private key needed")
     if not domain:
         print("domain needed")
-    try:
-        f.truncate(0)
-        f.write("%s\n%s" % (domain, pk))
-    except:
-        import ipdb; ipdb.set_trace()
 
+    f = open("/etc/staeon-node.conf", 'w')
+    f.write("%s\n%s" % (domain, pk))
     f.close()
 
 elif argz.subparser_name == 'sync':
