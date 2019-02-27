@@ -1,8 +1,10 @@
+import datetime
 import unittest
 import dateutil.parser
 
 from staeon.transaction import make_txid, make_transaction, validate_transaction
 from staeon.exceptions import *
+from staeon.peer_registration import validate_peer_registration, make_peer_registration
 
 i = [ # test inputs
     ['18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6', 3.2, 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'],
@@ -159,6 +161,34 @@ class P2SHAddressTest(unittest.TestCase):
         with self.assertRaises(InvalidAddress, msg="3 addresses are invalid"):
             make_transaction(i, o)
 
+class TestPeerRegistration(unittest.TestCase):
+    def test_working_registration(self):
+        pk = 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'
+        reg = make_peer_registration(pk, 'example.com')
+        self.assertEquals(validate_peer_registration(reg),True)
+
+    def test_bad_signature(self):
+        time = datetime.datetime.now()
+        bad_reg = {
+            'payout_address': '18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6',
+            'domain': 'example.com',
+            'signature': 'xxxxxxxxxxxxx',
+            'timestamp': time.isoformat()
+        }
+        msg = "Invalid peer registration signature not being caught"
+        with self.assertRaises(InvalidSignature, msg=msg):
+            validate_peer_registration(bad_reg)
+
+    def test_expired_registration(self):
+        bad_reg = {
+            'domain': 'example.com',
+            'payout_address': '18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6',
+            'signature': 'H01gh8M+gXuSxazS4a/a1MlC1USKlnA+Qz1OpsnVQHG+FB4HdZDlHwz6Qk7ooTWHdPCgy/84iAtTdyIG+ykOjJM=',
+            'timestamp': '2019-02-27T13:57:32.959377'
+        }
+        msg = "Expired timestamp in peer registration not being caught"
+        with self.assertRaises(ExpiredTimestamp, msg=msg):
+            validate_peer_registration(bad_reg)
 
 if __name__ == '__main__':
     unittest.main()
