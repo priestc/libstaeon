@@ -5,17 +5,19 @@ from .exceptions import *
 
 from .network import *
 
-def get_epoch_range(n):
+def get_epoch_range(n=None):
     """
     Given an epoch number, returns the start and end times for that epoch.
     """
+    if not n: n = get_epoch_number()
     start =  GENESIS + datetime.timedelta(seconds=EPOCH_LENGTH_SECONDS * n)
     return start, start + datetime.timedelta(minutes=10)
 
-def get_epoch_number(time):
+def get_epoch_number(time=None):
     """
     For a given time, returns which epoch number that date falls in.
     """
+    if not time: time = datetime.datetime.now()
     delta = time - GENESIS
     return int("%d" % (delta.total_seconds() / EPOCH_LENGTH_SECONDS))
 
