@@ -3,6 +3,7 @@ from bitcoin import ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoad
 
 from .exceptions import InvalidSignature
 from .consensus import validate_timestamp
+from .network import SEED_NODES
 import dateutil.parser
 
 def make_peer_registration(pk, domain):
@@ -32,3 +33,17 @@ def validate_peer_registration(reg, now=None):
     if not valid_sig or not valid_address:
         raise InvalidSignature("Invalid Signature")
     return True
+
+def get_peerlist():
+    for seed in SEED_NODES:
+        url = "http://%s/staeon/peerlist?top" % seed
+        try:
+            response = requests.get(url).response
+        except:
+            continue
+
+def push_peer_registration(reg, peers=None):
+    if not peers: peers = get_peerlist()
+
+    for peer in peers:
+        peer

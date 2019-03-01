@@ -15,12 +15,12 @@ o = [ # test outputs
     ['18pPTxvTc9rJZfD2tM1bNYHFhAcZjgqEdQ', 1.4]
 ]
 def ledger(address):
-    if address.startswith("18p"): return 3.2
-    if address.startswith("14Z"): return 0.5
+    if address.startswith("18p"): return 3.2, datetime.datetime(2019, 1, 1)
+    if address.startswith("14Z"): return 0.5, datetime.datetime(2019, 1, 1)
 
 def bad_ledger(address):
-    if address.startswith("18p"): return 1.0
-    if address.startswith("14Z"): return 0.3
+    if address.startswith("18p"): return 1.0, datetime.datetime(2019, 1, 1)
+    if address.startswith("14Z"): return 0.3, datetime.datetime(2019, 1, 1)
 
 class BasicTransactionCreationTest(unittest.TestCase):
     def test(self):
@@ -80,6 +80,27 @@ class ZeroInputTest(unittest.TestCase):
         ]
         with self.assertRaises(InvalidAmounts, msg="Invalid Amount not happening when zero input is tried"):
             make_transaction(i, bad_o)
+
+class TooYoungInoutsTest(unittest.TestCase):
+    tx = {
+        'inputs': [
+            ['18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6',3.2,'IN5n89fsHk742BA2+Gwcne8/wBs/4KGwz5DZL1x9dI72VV5TdiWVTEV0T4kgCnH2ct7bDxCScvXCQoMVDJfOTdU='],
+            ['14ZiHtrmT6Mi4RT2Liz51WKZMeyq2n5tgG',0.5,'HxlA9D1OQfown1KjoWWVl85xqG7z2uWlqyygnIc9gxuVKc0nCXyTxUD37MKAUw6uVAfyOaZWiw5aGRmUqzQerss=']],
+        'outputs': [
+            ['18pPTxvTc9rJZfD2tM1bNYHFhAcZjgqEdQ', 1.4],
+            ['16ViwyAVeKtz4vbTXWRSYgadT5w3Rj3yuq', 2.2]],
+        'timestamp': '2019-02-28T18:30:04.458796'
+    }
+    def ledger(self, address):
+        if address.startswith("18p"):
+            return 3.2, dateutil.parser.parse('2019-02-28T18:30:02.458796') # 2 sec before tx timestamp
+        if address.startswith("14Z"):
+            return 0.5, dateutil.parser.parse('2019-02-28T18:30:02.458796')
+
+    def test_too_young(self):
+        n = dateutil.parser.parse('2019-02-28T18:30:06.458796')
+        with self.assertRaises(InvalidTransaction):
+            validate_transaction(self.tx, ledger=self.ledger, now=n)
 
 class NegativeInputTest(unittest.TestCase):
     # testing make_transaction fails when you add a negative input

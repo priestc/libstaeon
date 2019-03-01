@@ -9,6 +9,7 @@ from bitcoin import (
 
 from .consensus import validate_timestamp
 from .exceptions import *
+from .network import PROPAGATION_WINDOW_SECONDS
 
 def _cut_to_8(amount):
     "Cut decimals to 8 places"
@@ -80,8 +81,13 @@ def validate_transaction(tx, ledger=None, min_fee=0.01, now=None):
         except:
             raise InvalidSignature("Signature %s not valid" % i)
 
-        if ledger and ledger(address) < amount:
-            raise InvalidAmounts("Not enough balance in %s" % address)
+        if ledger:
+            address_balance, last_spend = ledger(address)
+            delt = datetime.timedelta(seconds=PROPAGATION_WINDOW_SECONDS)
+            if last_spend + delt > ts:
+                raise InvalidTransaction("Input too young")
+            if address_balance < amount:
+                raise InvalidAmounts("Not enough balance in %s" % address)
 
         valid_sig = ecdsa_verify(message, sig, pubkey)
         valid_address = pubtoaddr(pubkey) == address
