@@ -64,9 +64,13 @@ def push_peer_registration(reg, peers=None, verbose=True):
         domain = peer['domain']
         url = "http://%s/peerlist" % domain
         if verbose: print("Pushing to: " + domain)
-        response = requests.post(url, {'registration': json.dumps(reg)})
+        try:
+            response = requests.post(url, {'registration': json.dumps(reg)})
+        except requests.exceptions.ConnectionError as exc:
+            print(exc)
+
         if verbose: print("..." + response.content)
 
-def register_peer(domain, pk, peers=None):
+def register_peer(domain, pk, peers=None, verbose=True):
     reg = make_peer_registration(pk, domain)
-    push_peer_registration(reg, peers=peers)
+    push_peer_registration(reg, peers=peers, verbose=verbose)

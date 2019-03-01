@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 
 from bitcoin import ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoaddr
 from .exceptions import *
@@ -90,3 +91,8 @@ def validate_rejection_authorization(authorization):
         raise InvalidSignature("Rejection signature not valid" % i)
 
     return True
+
+
+def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
+    sorter = lambda x: hashlib.sha256(sort_key(x) + seed + str(n)).hexdigest()
+    return sorted(items, key=sorter)
