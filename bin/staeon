@@ -3,7 +3,7 @@ from __future__ import print_function
 import argparse
 import os
 
-from staeon.peer_registration import register_peer
+from staeon.peer_registration import make_peer_registration
 parser = argparse.ArgumentParser() #version='1.0.2')
 
 subparsers = parser.add_subparsers(help='commands', dest="subparser_name")
@@ -39,7 +39,7 @@ if argz.subparser_name == 'register-node':
     f.write("%s\n%s" % (domain, pk))
     f.close()
 
-    reg = register_peer(domain, pk)
+    reg = make_peer_registration(pk, domain)
 
 elif argz.subparser_name == 'sync':
     pass
