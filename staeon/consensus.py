@@ -96,3 +96,17 @@ def validate_rejection_authorization(authorization):
 def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
     sorter = lambda x: hashlib.sha256(sort_key(x) + seed + str(n)).hexdigest()
     return sorted(items, key=sorter)
+
+
+def propagate_to_peers(domains, obj=None, type="tx"):
+    threadcount = len(domains) / 5
+
+    url = "http://%s/%s"
+    with futures.ThreadPoolExecutor(max_workers=threadcount) as executor:
+        fetches = {}
+        for domain in domains:
+            sender = lambda url: request.post(url)
+            kwargs = {'url': url % (domain, type)}
+            executor.submit(sender, **kwargs)] = sender
+
+        to_iterate = futures.as_completed(fetches)
