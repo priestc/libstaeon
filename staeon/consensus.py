@@ -1,5 +1,11 @@
+from __future__ import print_function
+
+import sys
 import datetime
 import hashlib
+from concurrent import futures
+import json
+import requests
 
 from bitcoin import ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoaddr
 from .exceptions import *
@@ -74,7 +80,7 @@ def propagate_rejection(tx, exc, my_node, nodes):
         try:
             response = requests.post(url, rejection)
         except:
-            print "%s failed" % url
+            print("%s failed" % url)
 
 def validate_rejection_authorization(authorization):
     message = "%s%s" % (authorization['txid'], authorization['domain'])
@@ -99,14 +105,14 @@ def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
 
 
 def propagate_to_peers(domains, obj=None, type="tx"):
-    threadcount = len(domains) / 5
-
-    url = "http://%s/%s"
-    with futures.ThreadPoolExecutor(max_workers=threadcount) as executor:
+    url_template = "http://%s/%s"
+    post_data = {'obj': json.dumps(obj)}
+    sender = lambda url: requests.post(url, post_data)
+    
+    with futures.ThreadPoolExecutor(max_workers=len(domains)) as executor:
         fetches = {}
         for domain in domains:
-            sender = lambda url: request.post(url)
-            kwargs = {'url': url % (domain, type)}
-            executor.submit(sender, **kwargs)] = sender
+            url = url_template % (domain, type)
+            fetches[executor.submit(sender, url=url)] = url
 
-        to_iterate = futures.as_completed(fetches)
+    return fetches
