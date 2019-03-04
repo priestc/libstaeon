@@ -16,22 +16,28 @@ def _cut_to_8(amount):
     return float("%.8f" % amount)
 
 def _process_outputs(outputs, timestamp):
-    outs = []
     total_out = 0
+    outs = []
     for out in sorted(outputs, key=lambda x: x[0]):
         address, amount = out
+        if amount != _cut_to_8(amount):
+            raise InvalidAmounts(
+                "Output amounts limited to 8 decimal places: %s" % amount
+            )
+
         if amount <= 0:
             raise InvalidAmounts("Output can't be zero or negative")
-        total_out += _cut_to_8(amount)
+        total_out += amount
+
         outs.append("%s,%s" % (address, amount))
+
         if not is_address(address) or not address.startswith("1"):
             raise InvalidAddress("Invalid address: %s" % address)
 
     if type(timestamp) == datetime.datetime:
         timestamp = timestamp.isoformat()
 
-    outs.append(timestamp)
-    return total_out, ";".join(outs)
+    return total_out, ";".join(outs + [timestamp])
 
 def make_transaction(inputs, outputs):
     timestamp = datetime.datetime.now().isoformat()
@@ -41,17 +47,23 @@ def make_transaction(inputs, outputs):
 
     in_total = 0
     for in_ in inputs:
-        address, amount, privkey = in_
+        try:
+            address, amount, privkey = in_
+        except ValueError:
+            raise Exception("Transaction inputs must be a 3 item list: [address, amount, privkey]")
+
         if amount <= 0:
             raise InvalidAmounts("Input can't be zero or negative")
-
-        msg = "%s%s%s" % (address, _cut_to_8(amount), out_msg)
+        amount = _cut_to_8(amount)
+        msg = "%s%s%s" % (address, amount, out_msg)
         sig = ecdsa_sign(msg, privkey)
         in_total += amount
         tx['inputs'].append([address, amount, sig])
 
     if in_total < out_total:
-        raise InvalidAmounts("Not enough inputs for outputs")
+        raise InvalidAmounts(
+            "Not enough inputs for outputs: %s in, %s out" % (in_total, out_total)
+        )
 
     random.shuffle(outputs)
     tx['outputs'] = outputs

@@ -56,31 +56,24 @@ def validate_ledger_hash_push(payout_address, ledger_hash, domain, sig):
     try:
         pubkey = ecdsa_recover(msg, sig)
     except:
-        raise Exception("Can't recover pubkey from signature")
+        raise InvalidSignature("Can't recover pubkey from signature")
 
     if not pubtoaddr(pubkey) == payout_address:
-        raise Exception("Incorrect signing key")
+        raise InvalidAddress("Incorrect signing key")
 
     if not ecdsa_verify(msg, sig, pubkey):
-        raise Excception("Invalid Signature")
+        raise InvalidSignature("Signature does not validate")
 
     return True
 
-def propagate_rejection(tx, exc, my_node, nodes):
-    my_domain = my_node['domain']
+def make_transaction_rejection(tx, exc, my_domain, my_pk):
     msg = "%s%s" % (tx['txid'], my_domain)
-    rejection = json.dumps({
+    return {
         'domain': my_domain,
         'txid': tx['txid'],
-        'signature': ecdsa_sign(msg, my_node['private_key']),
+        'signature': ecdsa_sign(msg, my_pk),
         'reason': exc.display()
-    })
-    for node in nodes:
-        url = "https://%s/staeon/rejection" % (node['domain'])
-        try:
-            response = requests.post(url, rejection)
-        except:
-            print("%s failed" % url)
+    }
 
 def validate_rejection_authorization(authorization):
     message = "%s%s" % (authorization['txid'], authorization['domain'])
@@ -108,7 +101,7 @@ def propagate_to_peers(domains, obj=None, type="tx"):
     url_template = "http://%s/%s"
     post_data = {'obj': json.dumps(obj)}
     sender = lambda url: requests.post(url, post_data)
-    
+
     with futures.ThreadPoolExecutor(max_workers=len(domains)) as executor:
         fetches = {}
         for domain in domains:

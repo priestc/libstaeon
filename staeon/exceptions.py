@@ -2,19 +2,25 @@ class BaseException(Exception):
     def display(self):
         return "%s: %s" % (self.__class__, str(self))
 
-class InvalidTransaction(BaseException):
+class InvalidObject(BaseException):
     pass
 
-class RejectedTransaction(BaseException):
+class RejectedObject(BaseException):
+    pass
+
+class InvalidTransaction(InvalidObject):
+    pass
+
+class RejectedTransaction(RejectedObject):
     pass
 
 class PotentialDoubleSpend(RejectedTransaction):
     pass
 
-class ExpiredTimestamp(RejectedTransaction):
+class ExpiredTimestamp(RejectedObject):
     pass
 
-class InvalidSignature(InvalidTransaction):
+class InvalidSignature(InvalidObject):
     pass
 
 class InvalidAmounts(InvalidTransaction):
@@ -26,5 +32,5 @@ class InvalidAddress(InvalidTransaction):
 class InvalidFee(InvalidTransaction):
     pass
 
-class InvalidTimestamp(InvalidTransaction):
+class InvalidTimestamp(InvalidObject):
     pass

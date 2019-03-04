@@ -29,6 +29,32 @@ class BasicTransactionCreationTest(unittest.TestCase):
             msg="Basic transaction creation fails"
         )
 
+class EightDecimalsTest(unittest.TestCase):
+    def test_creation(self):
+        o = [ # outputs with more than 8 decimal places
+            ['16ViwyAVeKtz4vbTXWRSYgadT5w3Rj3yuq', 2.100000003],
+            ['18pPTxvTc9rJZfD2tM1bNYHFhAcZjgqEdQ', 1.3037264856]
+        ]
+        msg="Transaction creation fails when output has more than 8 decimal places"
+        with self.assertRaises(InvalidAmounts, msg=msg):
+            make_transaction(i, o)
+
+    def test_validation(self):
+        bad_tx = {
+            'inputs': [
+                ['19Fgw7pZJPzvn1vnu7Qz6DxQvck64KA3Hn',1.97436049,'ICvt4Ph2aEBoVwlIrQiZgfyMjVZnQhxiICkOJAYdHXiCCbZkbB6DowvNTkhKPKxOfixXDPpKi6uoarRlXgJkHAI=']
+            ],
+            'outputs': [
+                ['1A5xFHKUjsz7S1WmGjbB7vti2FjoZjiQ8y', 1.9643604882327088]
+            ],
+            'timestamp': '2019-03-04T20:43:19.840642'
+        }
+        n = dateutil.parser.parse('2019-03-04T20:45:19.840642')
+        def ledger(address): return 500, datetime.datetime(2019, 1, 1)
+        msg="Transaction validation does not catch output having more than 8 decimal places"
+        with self.assertRaises(InvalidAmounts, msg=msg):
+            validate_transaction(bad_tx, ledger, now=n)
+
 class TooFewInputsTest(unittest.TestCase):
     # testing ledger callback catches coins being spent out of thin air.
 
