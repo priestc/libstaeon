@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from staeon.consensus import get_epoch_range
-from staeon.network import emission, total_supply_at
+from staeon.emission import emission, total_supply_at
 
 def make_emission_table(to_epoch=100000, accurate=False):
     """
