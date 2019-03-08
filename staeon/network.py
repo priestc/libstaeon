@@ -45,11 +45,15 @@ def total_supply_at(epoch):
         )
     ) / (19 * sq) + (emission(epoch) / 2)
 
-def get_decimals_for_epoch(epoch):
-    ret = None
-    for decimal_count, activation_epoch in DECIMAL_ACTIVATION_POINTS:
-        if epoch >= activation_epoch:
-            ret = decimal_count
-        else:
-            break
-    return ret
+def get_decimals_for_epoch(epoch=None, reward=None):
+    if not reward: reward = raw_emission(epoch)
+    if reward >= 1.0:
+        return 8
+
+    target = 0.1
+    decimals = 9
+    for x in range(100):
+        if reward >= target:
+            return decimals
+        decimals += 1
+        target /= 10
