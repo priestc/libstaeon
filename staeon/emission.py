@@ -1,5 +1,11 @@
 from math import atan as arctan, sqrt, log as ln
 
+def offline_penalty(percentile):
+    return 5 + (percent ** 2) / 146
+
+def online_reward(percentile):
+    return 30 - (percent ** 2) / 546
+
 def raw_emission(epoch):
     """
     Returns the block reward for given epoch,
