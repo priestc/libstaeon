@@ -107,7 +107,7 @@ def validate_rejection_authorization(authorization):
     valid_address = pubtoaddr(pubkey) == authorization['payout_address']
 
     if not valid_sig or not valid_address:
-        raise InvalidSignature("Rejection signature not valid" % i)
+        raise InvalidSignature("Rejection signature not valid")
 
     return True
 
@@ -136,6 +136,22 @@ def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
         'hashes': mini_hashes,
         'signature': ecdsa_sign(msg, my_pk)
     }
+
+def validate_ledger_push(push, payout_address):
+    msg = "%s%s%s" % (push['domain'], "".join(hashes), push['epoch'])
+    sig = push['signature']
+    try:
+        pubkey = ecdsa_recover(msg, sig)
+    except:
+        raise InvalidSignature("Can't recover pubkey from ledger push signature")
+
+    valid_sig = ecdsa_verify(msg, sig, pubkey)
+    valid_address = pubtoaddr(pubkey) == payout_address
+
+    if not valid_sig or not valid_address:
+        raise InvalidSignature("Rejection signature not valid")
+
+    return True
 
 def propagate_to_peers(domains, obj=None, type="tx"):
     url_template = "http://%s/%s"
