@@ -47,6 +47,26 @@ def validate_timestamp(ts, now=None):
         raise ExpiredTimestamp("Propagation window exceeded")
     return True
 
+def make_ledger_hashes(txids, epoch):
+    """
+    Calculates the ledger hash, and multiple dummy hashes for a given set of
+    txids in an epoch. The first returned hash is the legit ledger hash,
+    all following hashes are dummy hashes.
+    """
+    txids = sorted(txids)
+    return [ # legit ledger hash
+        hashlib.sha256("".join([
+            x for x in txids
+        ]) + str(epoch)).hexdigest(),
+        [ # dummy hashes
+            hashlib.sha256("".join([
+                x[:16] for x in txids
+            ]) + str(epoch)).hexdigest(),
+            hashlib.sha256("".join([
+                x[:8] for x in txids
+            ]) + str(epoch)).hexdigest()
+        ]
+    ]
 
 def validate_ledger_hash_push(payout_address, ledger_hash, domain, sig):
     """
@@ -96,6 +116,26 @@ def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
     sorter = lambda x: hashlib.sha256(sort_key(x) + seed + str(n)).hexdigest()
     return sorted(items, key=sorter)
 
+def make_dummy_matrix(items, seed, sort_key=lambda x: x):
+    return [
+        deterministic_shuffle(items, seed, i, sort_key) for i in range(5, 10)
+        ],[
+        deterministic_shuffle(items, seed, i, sort_key) for i in range(10, 15)
+    ]
+
+def make_legit_matrix(items, seed, sort_key=lambda x: x):
+    return [
+        deterministic_shuffle(items, seed, i, sort_key) for i in range(0, 5)
+    ]
+
+def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
+    msg = "%s%s%s" % (my_domain, "".join(mini_hashes), epoch)
+    return {
+        'epoch': epoch,
+        'domain': my_domain,
+        'hashes': mini_hashes,
+        'signature': ecdsa_sign(msg, my_pk)
+    }
 
 def propagate_to_peers(domains, obj=None, type="tx"):
     url_template = "http://%s/%s"
