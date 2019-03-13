@@ -9,7 +9,6 @@ import requests
 
 from bitcoin import ecdsa_verify, ecdsa_recover, ecdsa_sign, pubtoaddr, privtoaddr
 from .exceptions import *
-
 from .network import *
 
 def get_epoch_range(n=None):
@@ -47,6 +46,20 @@ def validate_timestamp(ts, now=None):
         raise ExpiredTimestamp("Propagation window exceeded")
     return True
 
+def validate_sig(sig, msg, address, type="transaction"):
+    try:
+        pubkey = ecdsa_recover(msg, sig)
+    except:
+        raise InvalidSignature("Can't recover pubkey from %s signature" % type)
+
+    valid_sig = ecdsa_verify(msg, sig, pubkey)
+    valid_address = pubtoaddr(pubkey) == address
+
+    if not valid_sig or not valid_address:
+        raise InvalidSignature("%s signature not valid" % type.title())
+
+    return True
+
 def make_ledger_hashes(txids, epoch):
     """
     Calculates the ledger hash, and multiple dummy hashes for a given set of
@@ -68,24 +81,6 @@ def make_ledger_hashes(txids, epoch):
         ]
     ]
 
-def validate_ledger_hash_push(payout_address, ledger_hash, domain, sig):
-    """
-    Validates that the ledger hash push is indeed signed by the pusher.
-    """
-    msg = "%s%s" % (ledger_hash, domain)
-    try:
-        pubkey = ecdsa_recover(msg, sig)
-    except:
-        raise InvalidSignature("Can't recover pubkey from signature")
-
-    if not pubtoaddr(pubkey) == payout_address:
-        raise InvalidAddress("Incorrect signing key")
-
-    if not ecdsa_verify(msg, sig, pubkey):
-        raise InvalidSignature("Signature does not validate")
-
-    return True
-
 def make_transaction_rejection(tx, exc, my_domain, my_pk):
     msg = "%s%s" % (tx['txid'], my_domain)
     return {
@@ -95,22 +90,11 @@ def make_transaction_rejection(tx, exc, my_domain, my_pk):
         'reason': exc.display()
     }
 
-def validate_rejection_authorization(authorization):
-    message = "%s%s" % (authorization['txid'], authorization['domain'])
-    sig = authorization['signature']
-    try:
-        pubkey = ecdsa_recover(message, sig)
-    except:
-        raise InvalidSignature("Can't recover pubkey from rejection signature")
-
-    valid_sig = ecdsa_verify(message, sig, pubkey)
-    valid_address = pubtoaddr(pubkey) == authorization['payout_address']
-
-    if not valid_sig or not valid_address:
-        raise InvalidSignature("Rejection signature not valid")
-
-    return True
-
+def validate_rejection_authorization(authorization, payout_address):
+    msg = "%s%s" % (authorization['txid'], authorization['domain'])
+    return validate_sig(
+        authorization['signature'], msg, payout_address, "rejection"
+    )
 
 def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
     sorter = lambda x: hashlib.sha256(sort_key(x) + seed + str(n)).hexdigest()
@@ -137,21 +121,9 @@ def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
         'signature': ecdsa_sign(msg, my_pk)
     }
 
-def validate_ledger_push(push, payout_address):
-    msg = "%s%s%s" % (push['domain'], "".join(hashes), push['epoch'])
-    sig = push['signature']
-    try:
-        pubkey = ecdsa_recover(msg, sig)
-    except:
-        raise InvalidSignature("Can't recover pubkey from ledger push signature")
-
-    valid_sig = ecdsa_verify(msg, sig, pubkey)
-    valid_address = pubtoaddr(pubkey) == payout_address
-
-    if not valid_sig or not valid_address:
-        raise InvalidSignature("Rejection signature not valid")
-
-    return True
+def validate_ledger_push(domain, epoch, hashes, sig, payout_address):
+    msg = "%s%s%s" % (domain, "".join(hashes), epoch)
+    return validate_sig(sig, msg, payout_address, "ledger push")
 
 def propagate_to_peers(domains, obj=None, type="tx"):
     url_template = "http://%s/%s"
