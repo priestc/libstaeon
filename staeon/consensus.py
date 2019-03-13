@@ -60,17 +60,19 @@ def validate_sig(sig, msg, address, type="transaction"):
 
     return True
 
-def make_ledger_hashes(txids, epoch):
+def make_epoch_hashes(txids, epoch, lucky_address):
     """
     Calculates the ledger hash, and multiple dummy hashes for a given set of
     txids in an epoch. The first returned hash is the legit ledger hash,
     all following hashes are dummy hashes.
     """
     txids = sorted(txids)
+    lucky_number = int(hashlib.sha256(txids[0]).hexdigest()[:8], 16)
+    lucky_hash = lucky_address(lucky_number)
     return [ # legit ledger hash
         hashlib.sha256("".join([
             x for x in txids
-        ]) + str(epoch)).hexdigest(),
+        ]) + str(epoch) + lucky_hash).hexdigest(),
         [ # dummy hashes
             hashlib.sha256("".join([
                 x[:16] for x in txids
