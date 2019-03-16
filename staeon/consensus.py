@@ -60,7 +60,7 @@ def validate_sig(sig, msg, address, type="transaction"):
 
     return True
 
-def make_epoch_hashes(txids, epoch, lucky_address):
+def make_epoch_hashes(txids, epoch, lucky_address, dummies=3):
     """
     Calculates the ledger hash, and multiple dummy hashes for a given set of
     txids in an epoch. The first returned hash is the legit ledger hash,
@@ -69,19 +69,16 @@ def make_epoch_hashes(txids, epoch, lucky_address):
     txids = sorted(txids)
     lucky_number = int(hashlib.sha256(txids[0]).hexdigest()[:8], 16)
     lucky_hash = lucky_address(lucky_number)
-    return [ # legit ledger hash
-        hashlib.sha256("".join([
-            x for x in txids
-        ]) + str(epoch) + lucky_hash).hexdigest(),
-        [ # dummy hashes
-            hashlib.sha256("".join([
-                x[:16] for x in txids
-            ]) + str(epoch)).hexdigest(),
-            hashlib.sha256("".join([
-                x[:8] for x in txids
-            ]) + str(epoch)).hexdigest()
-        ]
-    ]
+    legit_hash = hashlib.sha256(
+        "".join([x for x in txids]) + str(epoch) + lucky_hash
+    ).hexdigest()
+
+    dummy_hashes = [legit_hash]
+    for x in range(dummies):
+        new_dummy = hashlib.sha256(dummy_hashes[-1]).hexdigest()
+        dummy_hashes.append(new_dummy)
+
+    return [legit_hash, [x[:8] for x in dummy_hashes[1:]]]
 
 def make_transaction_rejection(tx, exc, my_domain, my_pk):
     msg = "%s%s" % (tx['txid'], my_domain)
@@ -92,10 +89,9 @@ def make_transaction_rejection(tx, exc, my_domain, my_pk):
         'reason': exc.display()
     }
 
-def validate_rejection_authorization(authorization, payout_address):
-    msg = "%s%s" % (authorization['txid'], authorization['domain'])
+def validate_rejection_authorization(domain, txid, sig, payout_address):
     return validate_sig(
-        authorization['signature'], msg, payout_address, "rejection"
+        sig, "%s%s" % (txid, domain), payout_address, "rejection"
     )
 
 def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
