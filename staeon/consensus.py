@@ -98,17 +98,15 @@ def deterministic_shuffle(items, seed, n=0, sort_key=lambda x: x):
     sorter = lambda x: hashlib.sha256(sort_key(x) + seed + str(n)).hexdigest()
     return sorted(items, key=sorter)
 
-def make_dummy_matrix(items, seed, sort_key=lambda x: x):
-    return [
-        deterministic_shuffle(items, seed, i, sort_key) for i in range(5, 10)
-        ],[
-        deterministic_shuffle(items, seed, i, sort_key) for i in range(10, 15)
-    ]
+def make_matrix(items, seed, sort_key=lambda x: x, width=5, n=5):
+    rows = []
+    for x in range(n):
+        rows.append([
+            deterministic_shuffle(items, seed, i, sort_key)
+            for i in range(width * x, width * (x+1))
+        ])
 
-def make_legit_matrix(items, seed, sort_key=lambda x: x):
-    return [
-        deterministic_shuffle(items, seed, i, sort_key) for i in range(0, 5)
-    ]
+    return rows
 
 def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
     msg = "%s%s%s" % (my_domain, "".join(mini_hashes), epoch)
@@ -119,8 +117,14 @@ def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
         'signature': ecdsa_sign(msg, my_pk)
     }
 
-def validate_ledger_push(domain, epoch, hashes, sig, payout_address):
+def validate_ledger_push(domain, epoch, hashes, sig, payout_address, now=None):
     msg = "%s%s%s" % (domain, "".join(hashes), epoch)
+    if not now: now = datetime.datetime.now()
+    epoch_start = get_epoch_range(epoch)[0]
+    if now < epoch_start:
+        raise InvalidObject("Epoch Hash too early")
+    if now > epoch_start + EPOCH_HASH_PUSH_WINDOW_SECONDS:
+        raise InvalidObject("Epoch Hash too late")
     return validate_sig(sig, msg, payout_address, "ledger push")
 
 def propagate_to_peers(domains, obj=None, type="tx"):
