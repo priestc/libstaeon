@@ -60,26 +60,6 @@ def validate_sig(sig, msg, address, type="transaction"):
 
     return True
 
-def make_epoch_hashes(txids, epoch, lucky_address, dummies=3):
-    """
-    Calculates the ledger hash, and multiple dummy hashes for a given set of
-    txids in an epoch. The first returned hash is the legit ledger hash,
-    all following hashes are dummy hashes.
-    """
-    txids = sorted(txids)
-    lucky_number = int(hashlib.sha256(txids[0]).hexdigest()[:8], 16)
-    lucky_hash = lucky_address(lucky_number)
-    legit_hash = hashlib.sha256(
-        "".join([x for x in txids]) + str(epoch) + lucky_hash
-    ).hexdigest()
-
-    dummy_hashes = [legit_hash]
-    for x in range(dummies):
-        new_dummy = hashlib.sha256(dummy_hashes[-1]).hexdigest()
-        dummy_hashes.append(new_dummy)
-
-    return [legit_hash, [x[:8] for x in dummy_hashes[1:]]]
-
 def make_transaction_rejection(tx, exc, my_domain, my_pk):
     msg = "%s%s" % (tx['txid'], my_domain)
     return {
@@ -139,3 +119,17 @@ def propagate_to_peers(domains, obj=None, type="tx"):
             fetches[executor.submit(sender, url=url)] = url
 
     return fetches
+
+def make_epoch_seed(epoch_tx_count, ledger_count, sorted_ledger, address_from_ledger):
+    """
+    epoch_tx_count = number of transactions made in a given epoch
+    ledger_count = the total number of ledger entries in the ledger database.
+    sorted_ledger = iterable that returns the nth ledger item. Must be sorted by
+                    amount and then address.
+    address_from_ledger = callable that returns the address from the ledger entry
+                          returned by sorted_ledger
+    """
+    index = epoch_tx_count % ledger_count
+    return hashlib.sha256(
+        str(epoch_tx_count) + address_from_ledger(sorted_ledger[index])
+    ).hexdigest()

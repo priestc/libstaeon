@@ -5,7 +5,7 @@ import dateutil.parser
 from staeon.transaction import make_txid, make_transaction, validate_transaction
 from staeon.exceptions import *
 from staeon.peer_registration import validate_peer_registration, make_peer_registration
-from staeon.consensus import make_epoch_hashes
+from staeon.consensus import make_epoch_seed
 
 i = [ # test inputs
     ['18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6', 3.2, 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'],
@@ -238,12 +238,18 @@ class TestPeerRegistration(unittest.TestCase):
         with self.assertRaises(ExpiredTimestamp, msg=msg):
             validate_peer_registration(bad_reg)
 
-class EpochHashTest(unittest.TestCase):
+class LedgerSeedTest(unittest.TestCase):
     def test(self):
-        lucky_address = lambda x: '18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6'
-        result = make_epoch_hashes(['123', '456', '789'], 50, lucky_address, dummies=3)
-        self.assertEquals(result[0], '98e618d565894507cc49cf4df55b2b908a3fb3c72df230dc0a73ccffe9dbf571')
-        self.assertEquals(len(result[1]), 3)
+        epoch_tx_count = 546
+        ledger = [
+            ['abcdefg', 44.2],
+            ['xyzabcr', 35.3],
+            ['adebfxs', 12.2],
+            ['fhrtydk', 12.2],
+            ['dsfhnky', 10.0]
+        ]
+        seed = make_epoch_seed(37, len(ledger), ledger, lambda x: x[0])
+        self.assertTrue(seed.startswith('32709895ae310d0fe18e66c0c316c239'))
 
 if __name__ == '__main__':
     unittest.main()
