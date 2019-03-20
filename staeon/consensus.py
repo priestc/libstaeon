@@ -133,3 +133,10 @@ def make_epoch_seed(epoch_tx_count, ledger_count, sorted_ledger, address_from_le
     return hashlib.sha256(
         str(epoch_tx_count) + address_from_ledger(sorted_ledger[index])
     ).hexdigest()
+
+def make_mini_hashes(seed, limit=5):
+    mini_hashes = []
+    for x in range(limit):
+        seed = hashlib.sha256(seed).hexdigest()
+        mini_hashes.append(seed[:8])
+    return mini_hashes
