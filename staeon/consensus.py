@@ -88,24 +88,40 @@ def make_matrix(items, seed, sort_key=lambda x: x, width=5, n=5):
 
     return rows
 
-def make_ledger_push(epoch, my_domain, my_pk, mini_hashes):
-    msg = "%s%s%s" % (my_domain, "".join(mini_hashes), epoch)
-    return {
-        'epoch': epoch,
-        'domain': my_domain,
-        'hashes': mini_hashes,
-        'signature': ecdsa_sign(msg, my_pk)
-    }
+class EpochHashPush(object):
+    @classmethod
+    def make(cls, epoch, from_domain, to_domain, from_pk, hashes):
+        msg = "%s%s%s%s" % (from_domain, to_domain, "".join(hashes), epoch)
+        return {
+            'epoch': epoch,
+            'from_domain': from_domain,
+            'to_domain': to_domain,
+            'hashes': hashes,
+            'signature': ecdsa_sign(msg, from_pk)
+        }
 
-def validate_ledger_push(domain, epoch, hashes, sig, payout_address, now=None):
-    msg = "%s%s%s" % (domain, "".join(hashes), epoch)
-    if not now: now = datetime.datetime.now()
-    epoch_start = get_epoch_range(epoch)[0]
-    if now < epoch_start:
-        raise InvalidObject("Epoch Hash too early")
-    if now > epoch_start + EPOCH_HASH_PUSH_WINDOW_SECONDS:
-        raise InvalidObject("Epoch Hash too late")
-    return validate_sig(sig, msg, payout_address, "ledger push")
+    def __init__(self, obj, payout_address):
+        self.obj = obj
+        self.payout_address = payout_address
+
+    def validate(self, validate_expired=True):
+        if validate_expired:
+            self._validate_expired()
+        msg = "%s%s%s" % (
+            self.obj['from_domain'], self.obj['to_domain'],
+            "".join(self.obj['hashes']), self.obj['epoch']
+        )
+        return validate_sig(
+            self.obj['signature'], msg, self.payout_address, "ledger push"
+        )
+
+    def _validate_expired(self, now=None):
+        if not now: now = datetime.datetime.now()
+        epoch_start = get_epoch_range(self.obj['epoch'])[0]
+        if now < epoch_start:
+            raise InvalidObject("Epoch Hash too early")
+        if now > epoch_start + EPOCH_HASH_PUSH_WINDOW_SECONDS:
+            raise InvalidObject("Epoch Hash too late")
 
 def propagate_to_peers(domains, obj=None, type="tx"):
     url_template = "http://%s/%s"
@@ -140,3 +156,37 @@ def make_mini_hashes(seed, limit=5):
         seed = hashlib.sha256(seed).hexdigest()
         mini_hashes.append(seed[:8])
     return mini_hashes
+
+class NodePenalization(object):
+    @classmethod
+    def _make_reason(self, wrong):
+        return "%s%s%s%s" % (
+            wrong['from_domain'], wrong['to_domain'], wrong['hashes'],
+            wrong['epoch'], wrong['signature'],
+        ) if wrong else "No Push"
+
+    @classmethod
+    def make(cls, real_hash, wrong_push, my_pk):
+        msg = "%s%s" % (
+            real_hash, cls._make_reason(wrong_push)
+        )
+        return {
+            'epoch': epoch,
+            'real_hash': real_hash,
+            'wrong': wrong_push,
+            'signature': ecdsa_sign(msg, my_pk)
+        }
+
+    def __init__(self, obj, payout_address, from_payout_address):
+        self.obj = obj
+        self.from_payout_address = from_payout_address
+        self.payout_address = payout_address
+
+    def validate(self):
+        if obj['wrong']:
+            EpochHashPush(obj['wrong'], self.from_payout_address).validate()
+        reason = NodePenalization._make_reason(self.wrong_push)
+        msg = "%s%s%s%s" % (self.epoch, self.real_hash, reason)
+        return validate_sig(
+            obj['signature'], msg, self.payout_address, "node penalization"
+        )

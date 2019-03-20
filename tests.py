@@ -108,7 +108,7 @@ class ZeroInputTest(unittest.TestCase):
         with self.assertRaises(InvalidAmounts, msg="Invalid Amount not happening when zero input is tried"):
             make_transaction(i, bad_o)
 
-class TooYoungInoutsTest(unittest.TestCase):
+class TooYoungInputsTest(unittest.TestCase):
     tx = {
         'inputs': [
             ['18pvhMkv1MZbZZEncKucAmVDLXZsD9Dhk6',3.2,'IN5n89fsHk742BA2+Gwcne8/wBs/4KGwz5DZL1x9dI72VV5TdiWVTEV0T4kgCnH2ct7bDxCScvXCQoMVDJfOTdU='],
@@ -213,7 +213,7 @@ class TestPeerRegistration(unittest.TestCase):
     def test_working_registration(self):
         pk = 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'
         reg = make_peer_registration(pk, 'example.com')
-        self.assertEquals(validate_peer_registration(reg),True)
+        self.assertEquals(validate_peer_registration(reg), True)
 
     def test_bad_signature(self):
         time = datetime.datetime.now()
@@ -250,6 +250,11 @@ class LedgerSeedTest(unittest.TestCase):
         ]
         seed = make_epoch_seed(37, len(ledger), ledger, lambda x: x[0])
         self.assertTrue(seed.startswith('32709895ae310d0fe18e66c0c316c239'))
+
+class TestEpochPush(unittest.TestCase):
+    def test(self):
+        pk = 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'
+        lp = LedgerPush.make(45, 'example.com', pk, ['abcdefgh', 'ijklmnop'])
 
 if __name__ == '__main__':
     unittest.main()
