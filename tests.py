@@ -253,8 +253,15 @@ class LedgerSeedTest(unittest.TestCase):
 
 class TestEpochPush(unittest.TestCase):
     def test(self):
-        pk = 'KwuVvv359oft9TfzyYLAQBgpPyCFpcTSrV9ZgJF9jKdT8jd7XLH2'
-        lp = LedgerPush.make(45, 'example.com', pk, ['abcdefgh', 'ijklmnop'])
+        from staeon.consensus import EpochHashPush
+        pk = 'KwZBRN9vpPbVDBGXUehKzbLaNKykorffcvoXrHCrTKg7yWXPXr6j'
+        add = '18P7Tap5iJFRzz1XdEQVwV9jn8URBs6dgo'
+        lp = EpochHashPush.make(
+            45, 'from.com', 'to.org', pk, ['abcdefgh', 'ijklmnop']
+        )
+        self.assertEquals(
+            EpochHashPush(lp, add).validate(validate_expired=False), True
+        )
 
 if __name__ == '__main__':
     unittest.main()

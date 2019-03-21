@@ -107,7 +107,7 @@ class EpochHashPush(object):
     def validate(self, validate_expired=True):
         if validate_expired:
             self._validate_expired()
-        msg = "%s%s%s" % (
+        msg = "%s%s%s%s" % (
             self.obj['from_domain'], self.obj['to_domain'],
             "".join(self.obj['hashes']), self.obj['epoch']
         )
@@ -116,11 +116,12 @@ class EpochHashPush(object):
         )
 
     def _validate_expired(self, now=None):
+        delt = datetime.timedelta(seconds=EPOCH_HASH_PUSH_WINDOW_SECONDS)
         if not now: now = datetime.datetime.now()
         epoch_start = get_epoch_range(self.obj['epoch'])[0]
         if now < epoch_start:
             raise InvalidObject("Epoch Hash too early")
-        if now > epoch_start + EPOCH_HASH_PUSH_WINDOW_SECONDS:
+        if now > epoch_start + delt:
             raise InvalidObject("Epoch Hash too late")
 
 def propagate_to_peers(domains, obj=None, type="tx"):
