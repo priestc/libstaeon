@@ -240,7 +240,6 @@ class TestPeerRegistration(unittest.TestCase):
 
 class LedgerSeedTest(unittest.TestCase):
     def test(self):
-        epoch_tx_count = 546
         ledger = [
             ['abcdefg', 44.2],
             ['xyzabcr', 35.3],
@@ -262,6 +261,21 @@ class TestEpochPush(unittest.TestCase):
         self.assertEquals(
             EpochHashPush(lp, add).validate(validate_expired=False), True
         )
+
+class TestPenalization(unittest.TestCase):
+    def test(self):
+        from staeon.consensus import NodePenalization, EpochHashPush
+        pk = 'KwZBRN9vpPbVDBGXUehKzbLaNKykorffcvoXrHCrTKg7yWXPXr6j'
+        add = '18P7Tap5iJFRzz1XdEQVwV9jn8URBs6dgo'
+        lp = EpochHashPush.make(
+            45, 'from.com', 'to.org', pk, ['abcdefgh', 'ijklmnop']
+        )
+
+        my_add = '18YHH9D3gxu14arUNipzod5fJzUQTAFJSx'
+        my_pk = 'L1QhH1zVZoxBvXVgK2dP1wRrLeXDnHW6a5sjH9hnD9QTr9JhuKjE'
+        obj = NodePenalization.make(45, 'rtrhfgd', lp, my_pk)
+
+        self.assertEquals(NodePenalization(obj, my_add, add).validate(), True)
 
 if __name__ == '__main__':
     unittest.main()

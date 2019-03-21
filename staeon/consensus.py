@@ -163,18 +163,18 @@ class NodePenalization(object):
     def _make_reason(self, wrong):
         return "%s%s%s%s" % (
             wrong['from_domain'], wrong['to_domain'], wrong['hashes'],
-            wrong['epoch'], wrong['signature'],
+            wrong['signature'],
         ) if wrong else "No Push"
 
     @classmethod
-    def make(cls, real_hash, wrong_push, my_pk):
-        msg = "%s%s" % (
-            real_hash, cls._make_reason(wrong_push)
+    def make(cls, epoch, correct_hash, wrong_push, my_pk):
+        msg = "%s%s%s" % (
+            epoch, correct_hash, cls._make_reason(wrong_push)
         )
         return {
             'epoch': epoch,
-            'real_hash': real_hash,
-            'wrong': wrong_push,
+            'correct_hash': correct_hash,
+            'push': wrong_push,
             'signature': ecdsa_sign(msg, my_pk)
         }
 
@@ -184,10 +184,10 @@ class NodePenalization(object):
         self.payout_address = payout_address
 
     def validate(self):
-        if obj['wrong']:
-            EpochHashPush(obj['wrong'], self.from_payout_address).validate()
-        reason = NodePenalization._make_reason(self.wrong_push)
-        msg = "%s%s%s%s" % (self.epoch, self.real_hash, reason)
+        if self.obj['push']:
+            EpochHashPush(self.obj['push'], self.from_payout_address).validate(False)
+        reason = NodePenalization._make_reason(self.obj['push'])
+        msg = "%s%s%s" % (self.obj['epoch'], self.obj['correct_hash'], reason)
         return validate_sig(
-            obj['signature'], msg, self.payout_address, "node penalization"
+            self.obj['signature'], msg, self.payout_address, "node penalization"
         )
